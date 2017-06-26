@@ -10,8 +10,12 @@ void readFile(FILE *file) {
     // Reads the first 2 bytes (the number of records)
     fread(numRecordsBuf, 1, 2, file);
     
+    printf("numRecordsBuf[0] = %d\n", numRecordsBuf[0]);
+    printf("numRecordsBuf[1] = %d\n", numRecordsBuf[1]);
+    
     numRecords = numRecordsBuf[0] | numRecordsBuf[1] << 8;
-    printf("sizeOf int %lu", sizeof(numRecords));
+    printf("sizeOf int %lu\n", sizeof(numRecords));
+    printf("sizeOf buf %lu\n", sizeof(numRecordsBuf));
     printf("numRecords = %d\n", numRecords);
     
     
@@ -20,6 +24,48 @@ void readFile(FILE *file) {
     
     // Reads each record
     char recordsBuf[40];
+    
+    int i;
+    for (i = 0; i<numRecords; i++) {
+        fread(recordsBuf, 1, 40, file);
+        
+        readRecord(recordsBuf);
+        
+        // TODO: Need to look at each byte of the records buffer and print out information
+    }
+    
+    
+    
+}
+
+// Reads and summarizes a record
+void readRecord(char record[]) {
+    int recordNum;
+    int aux;
+    int dst;
+    
+    // Gets the record number
+    recordNum = record[0] | record[1] << 8;
+    
+    // Gets the auxiliary flag and the Daylight Savings Time flag
+    if ((int)record[2] == 3) {
+        aux = 1;
+        dst = 1;
+    }
+    else if ((int)record[2] == 1) {
+        aux = 1;
+        dst = 0;
+    }
+    else if ((int)record[2] == 2) {
+        aux = 0;
+        dst = 1;
+    }
+    else {
+        aux = 0;
+        dst = 0;
+    }
+    
+    // Gets the timestamp
     
 }
 

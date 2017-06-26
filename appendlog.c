@@ -27,7 +27,8 @@ int main(int argc, char* argv[]) {
     int auxiliaryFlag = 0;
     char *filename;
     char *message;
-    FILE *file;
+    FILE *read_fptr;
+    FILE *write_fptr;
     
     // This is used for reading arguments
     static struct option long_options[] = {
@@ -63,11 +64,12 @@ int main(int argc, char* argv[]) {
     }
     
     // Attempt to read the file
-    file = fopen(filename, "w");    // NEEDS TO BE FIXED: "w" STILL CREATES THE FILE IF IT DOESN"T EXIST
+    read_fptr = fopen(filename, "r");
     
     // If the file is null it needs to be created
-    if (file == NULL) {
-        file = fopen(filename, "w+");
+    if (read_fptr == NULL) {
+        write_fptr = fopen(filename, "w+");
+        read_fptr = fopen(filename, "r");
         createFile(file, message);
     }
     
