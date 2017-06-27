@@ -3,7 +3,7 @@
 
 int main() {
     FILE *file; 
-    char data = 0;
+    char data = 1;
     file = fopen("test", "w");
     fwrite(&data, 1, 1, file);
     fclose(file);
