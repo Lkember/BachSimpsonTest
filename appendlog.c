@@ -4,12 +4,12 @@
 #include <getopt.h>
 
 // Updates the file to include the latest message
-void updateFile(FILE *file, char *message) {
+void updateFile(FILE *read, FILE *write, char *message) {
     unsigned char buf[2];
     int numRecords;         // THIS MAY NEED TO BE short int since int is 4 bytes
     
     //Read the first 2 bytes which are the number of records
-    fread(buf, 1, 2, file);
+    fread(buf, 1, 2, read);
     
     // Convert to an int and add 1
     numRecords = (buf[1]<<8)+buf[0];
@@ -69,14 +69,16 @@ int main(int argc, char* argv[]) {
     // If the file is null it needs to be created
     if (read_fptr == NULL) {
         write_fptr = fopen(filename, "w+");
-        read_fptr = fopen(filename, "r");
-        createFile(file, message);
+        createFile(write_fptr, message);
+        
+        fclose(write_fptr);
     }
-    
     // Otherwise we only need to update the file
     else {
-        updateFile(file, message);
+        write_fptr = fopen(filename, "r+");
+        updateFile(read_fptr, write_fptr, message);
+        
+        fclose(read_fptr);
+        fclose(write_fptr);
     }
-    
-    fclose(file);
 }
