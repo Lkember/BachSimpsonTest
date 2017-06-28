@@ -68,27 +68,39 @@ void readRecord(FILE *file) {
     
     
     // Displaying the data
+    
     printf("------------------------\nRecord %d\n------------------------\n", recordNum);
-    
     if (aux == 1) {
-        printf("Auxiliary = true\n");
+        
+        if (aux == 1) {
+            printf("Auxiliary = true\n");
+        }
+        else {
+            printf("Auxiliary = false\n");
+        }
+        
+        printf("%s", officialTime);
+        if (dst == 1) {
+            printf("Daylight Savings Time = true\n");
+        }
+        else {
+            printf("Daylight Savings Time = false\n");
+        }
+        printf("Message:\n  %s\n", message);
+        
+        // TODO: NEED TO CHECK THE CHECKSUM
+        printf("Checksum: %" PRIu8 "\n\n", checksum);
     }
     else {
-        printf("Auxiliary = false\n");
+        printf("%s", officialTime);
+        if (dst == 1) {
+            printf("Daylight Savings Time = true\n");
+        }
+        else {
+            printf("Daylight Savings Time = false\n");
+        }
+        printf("Message:\n  %s\n\n", message);
     }
-    
-    if (dst == 1) {
-        printf("Daylight Savings Time = true\n");
-    }
-    else {
-        printf("Daylight Savings Time = false\n");
-    }
-    
-    printf("Message:\n%s\n", message);
-    printf("%s", officialTime);
-    
-    // TODO: NEED TO CHECK THE CHECKSUM
-    printf("Checksum: %" PRIu8 "\n\n", checksum);
 }
 
 
