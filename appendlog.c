@@ -34,19 +34,23 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
     
     // Write the auxiliary and dst flags
     if (dst == 1 && auxiliaryFlag == 1) {
-        int i = 3;
-        fwrite(&i, 1, 1, file);
-    }
-    else if (dst == 1 && auxiliaryFlag == 0) {
-        int i = 2;
-        fwrite(&i, 1, 1, file);
+        unsigned int i = 0b11000000;             //this is 11000000
+        unsigned char charval = i;
+        fwrite(&charval, 1, 1, file);
     }
     else if (dst == 0 && auxiliaryFlag == 1) {
-        int i = 1;
+        unsigned int i = 0b10000000;             //this is 10000000
+        unsigned char charval = i;
+        fwrite(&charval, 1, 1, file);
+    }
+    else if (dst == 1 && auxiliaryFlag == 0) {
+        unsigned int i = 0b01000000;              //this is 01000000
+        unsigned char charval = i;
         fwrite(&i, 1, 1, file);
     }
     else {
-        int i = 0;
+        unsigned int i = 0b00000000;               //this is 00000000
+        unsigned char charval = i;
         fwrite(&i, 1, 1, file);
     }
     

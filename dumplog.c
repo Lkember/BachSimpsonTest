@@ -14,15 +14,16 @@ void readRecord(char record[]) {
     recordNum = record[0] | record[1] << 8;
     
     // Getting the auxiliary flag and the Daylight Savings Time flag
-    if ((int)record[2] == 3) {
+    printf("aux/dst = %d\n%d\n", ((unsigned short int)record[2]) & ((unsigned short int)255) , 0b11000000);
+    if (((unsigned short int)record[2] & (unsigned short int)255) == 0b11000000) {
         aux = 1;
         dst = 1;
     }
-    else if ((int)record[2] == 1) {
+    else if (((unsigned short int)record[2] & (unsigned short int)255) == 0b10000000) {
         aux = 1;
         dst = 0;
     }
-    else if ((int)record[2] == 2) {
+    else if (((unsigned short int)record[2] & (unsigned short int)255) == 0b01000000) {
         aux = 0;
         dst = 1;
     }
