@@ -33,7 +33,7 @@ void readRecord(char record[]) {
     
     // Getting the timestamp
     // TODO: NEEDS TO BE TESTED, MAY NEED TO REVERSE ARRAY
-    int timestamp = (record[3] << 24) | (record[4]<<16) | (record[5] << 8) | record[6];
+    int timestamp = (record[6] << 24) | (record[5]<<16) | (record[4] << 8) | record[3];
     
     struct tm tim;
     char time[30];
@@ -41,7 +41,7 @@ void readRecord(char record[]) {
     time_t t = (time_t)timestamp;
     tim = *localtime(&t);
     strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S %Z", &tim);
-    
+    // TODO: CAN USE asctime TO GET TIME INSTEAD
     
     //Skip the next 3 bytes since they are spare bytes
     // The next bytes from 9 to 38 are ASCII characters (30 bytes)
@@ -71,10 +71,13 @@ void readRecord(char record[]) {
         printf("Daylight Savings Time = false\n");
     }
     
+    printf("Message:\n%s\n", message);
+    
     //TODO: NEED TO ADD 30 YEARS TO THE TIME
-    printf("%s\n\n", time);
+    printf("%s\n", time);
     
     // TODO: NEED TO CHECK THE CHECKSUM
+    printf("%d\n", checksum);
 }
 
 
