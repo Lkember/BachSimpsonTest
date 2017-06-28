@@ -2,27 +2,35 @@
 #include <stdlib.h> 
 #include <string.h>
 #include <time.h>
+#include <inttypes.h>
 
 
-// Reads and summarizes a record
-void readRecord(char record[]) {
-    int recordNum;
+// reads and summarizes files
+void readRecord(FILE *file) {
+    uint16_t recordNum;         // Used to hold the record number
+    uint8_t auxdstByte;         // Holds the byte that determines auxiliary flag and dst
     int aux;
     int dst;
+    int epochTimestamp = 946684800;     //The amount of seconds from 1970-2000
     
-    // Getting the record number
-    recordNum = record[0] | record[1] << 8;
+    // Reads the record number
+    fread(&recordNum, sizeof(recordNum), 1, file);
+    
+    
+    // Reads the auxiliary flag and dst byte
+    fread(&auxdstByte, sizeof(auxdstByte), 1, file);
+    
     
     // Getting the auxiliary flag and the Daylight Savings Time flag
-    if (((unsigned short int)record[2] & (unsigned short int)255) == 0b11000000) {
+    if (auxdstByte == 0b11000000) {
         aux = 1;
         dst = 1;
     }
-    else if (((unsigned short int)record[2] & (unsigned short int)255) == 0b10000000) {
+    else if (auxdstByte == 0b10000000) {
         aux = 1;
         dst = 0;
     }
-    else if (((unsigned short int)record[2] & (unsigned short int)255) == 0b01000000) {
+    else if (auxdstByte == 0b01000000) {
         aux = 0;
         dst = 1;
     }
@@ -31,30 +39,35 @@ void readRecord(char record[]) {
         dst = 0;
     }
     
+    
     // Getting the timestamp
-    // TODO: NEEDS TO BE TESTED, MAY NEED TO REVERSE ARRAY
-    int timestamp = (record[6] << 24) | (record[5]<<16) | (record[4] << 8) | record[3];
+    uint32_t timestamp;
+    fread(&timestamp, sizeof(timestamp), 1, file);
+    fseek(file, 2, SEEK_CUR);                       // the next 2 bytes are spare
     
-    struct tm tim;
-    char time[30];
+    timestamp += epochTimestamp;
     
-    time_t t = (time_t)timestamp;
-    tim = *localtime(&t);
-    strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S %Z", &tim);
-    // TODO: CAN USE asctime TO GET TIME INSTEAD
+    struct tm timeStruct;
+    char *officialTime;
     
-    //Skip the next 3 bytes since they are spare bytes
-    // The next bytes from 9 to 38 are ASCII characters (30 bytes)
+    time_t time = (time_t)timestamp;
+    timeStruct = *localtime(&time);
+    
+    //    strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S %Z", &timeStruct);
+    officialTime = asctime(&timeStruct);
+    
+    
+    // Getting the message
     char message[30];
+    fread(&message, sizeof(message), 1, file);
     
-    int i;
-    for (i=9; i<39; i++) {
-        message[i-9] = record[i];
-    }
     
-    // Getting the checksum
-    int checksum = record[39];
+    //Getting the checksum
+    uint8_t checksum;
+    fread(&checksum, 1, 1, file);
     
+    
+    // Displaying the data
     printf("------------------------\nRecord %d\n------------------------\n", recordNum);
     
     if (aux == 1) {
@@ -72,35 +85,35 @@ void readRecord(char record[]) {
     }
     
     printf("Message:\n%s\n", message);
-    
-    //TODO: NEED TO ADD 30 YEARS TO THE TIME
-    printf("%s\n", time);
+    printf("%s", officialTime);
     
     // TODO: NEED TO CHECK THE CHECKSUM
-    printf("%d\n\n", checksum);
+    printf("Checksum: %" PRIu8 "\n\n", checksum);
 }
 
 
 // Reads the file and summarizes it's parts
 void readFile(FILE *file) {
-    char numRecordsBuf[2];
-    short int numRecords;
+//    char numRecordsBuf[2];
+    uint16_t numRecords;
     
     // Reads the first 2 bytes (the number of records)
-    fread(numRecordsBuf, 1, 2, file);
-    numRecords = numRecordsBuf[0] | numRecordsBuf[1] << 8;
+//    fread(&numRecords, sizeof(numRecords), 1, file);
+//    numRecords = numRecordsBuf[0] | numRecordsBuf[1] << 8;
+    fread(&numRecords, sizeof(numRecords), 1, file);
     
     // Skips the next 2 bytes (as they are spare bytes)
     fseek(file, 2, SEEK_CUR);
     
     // Reads each record
-    char recordsBuf[40];
+//    char recordsBuf[40];
     
     int i;
     for (i = 0; i<numRecords; i++) {
-        fread(recordsBuf, 1, 40, file);
+//        fread(recordsBuf, 1, 40, file);
+//        readRecord(recordsBuf);
         
-        readRecord(recordsBuf);
+        readRecord(file);
     }
     
     
@@ -125,7 +138,7 @@ int main(int argc, char* argv[]) {
     FILE *file;
     
     filename = argv[2];
-    file = fopen(filename, "r");
+    file = fopen(filename, "rb");
     
     // File could not be found, exiting
     if (file == NULL) {
