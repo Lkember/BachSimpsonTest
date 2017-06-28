@@ -14,7 +14,6 @@ void readRecord(char record[]) {
     recordNum = record[0] | record[1] << 8;
     
     // Getting the auxiliary flag and the Daylight Savings Time flag
-    printf("aux/dst = %d\n%d\n", ((unsigned short int)record[2]) & ((unsigned short int)255) , 0b11000000);
     if (((unsigned short int)record[2] & (unsigned short int)255) == 0b11000000) {
         aux = 1;
         dst = 1;
@@ -78,7 +77,7 @@ void readRecord(char record[]) {
     printf("%s\n", time);
     
     // TODO: NEED TO CHECK THE CHECKSUM
-    printf("%d\n", checksum);
+    printf("%d\n\n", checksum);
 }
 
 
