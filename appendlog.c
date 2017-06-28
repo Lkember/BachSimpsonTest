@@ -3,11 +3,13 @@
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
+#include <inttypes.h>
 
 // Writes a new record to the given file at the current position
 void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFlag) {
     printf("Adding record...\n");
     
+    int epochTimestamp = 946684800;     //The amount of seconds from 1970-2000
     int dst;
     short int spareByte = 0;
     
@@ -19,7 +21,7 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
     timeinfo = localtime(&rawtime);
     
     int time = (int)rawtime;
-    // NEED TO SUBTRACT THE AMOUNT OF SECONDS FROM 1970-2000 FROM time
+    time -= epochTimestamp;
     
     if (timeinfo->tm_isdst > 0) {
         dst = 1;
@@ -34,24 +36,20 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
     
     // Write the auxiliary and dst flags
     if (dst == 1 && auxiliaryFlag == 1) {
-        unsigned int i = 0b11000000;             //this is 11000000
-        unsigned char charval = i;
-        fwrite(&charval, 1, 1, file);
+        uint8_t i = 192;
+        fwrite(&i, 1, 1, file);
     }
     else if (dst == 0 && auxiliaryFlag == 1) {
-        unsigned int i = 0b10000000;             //this is 10000000
-        unsigned char charval = i;
-        fwrite(&charval, 1, 1, file);
+        uint8_t i = 128;
+        fwrite(&i, 1, 1, file);
     }
     else if (dst == 1 && auxiliaryFlag == 0) {
-        unsigned int i = 0b01000000;              //this is 01000000
-        unsigned char charval = i;
-        fwrite(&charval, 1, 1, file);
+        uint8_t i = 64;
+        fwrite(&i, 1, 1, file);
     }
     else {
-        unsigned int i = 0b00000000;               //this is 00000000
-        unsigned char charval = i;
-        fwrite(&charval, 1, 1, file);
+        uint8_t i = 0;
+        fwrite(&i, 1, 1, file);
     }
     
     // Write the time followed by 3 spare bytes
@@ -65,7 +63,7 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
     // TODO NEED TO WRITE CHECKSUM VALUE
     fwrite(&spareByte, 1, 1, file);
     
-    printf("Successfully added record\n");
+    printf("Record added\n");
 }
 
 
@@ -94,8 +92,6 @@ void updateFile(FILE *file, char *message, int auxiliaryFlag) {
     int position = 0;
     position += 4;                  // Adding the sequence number + 2 spare bytes (4 bytes in total)
     position += (numRecords-1)*40;  // Adding 40 bytes per record
-    
-    printf("Moving to position: %d\n", position);
     
     fseek(file, position, SEEK_SET);
     
@@ -166,9 +162,6 @@ int main(int argc, char* argv[]) {
         printf("Error\nUsage: -f FILENAME -t LOG MESSAGE\n");
         exit(EXIT_FAILURE);
     }
-    
-    
-    printf("auxiliary flag: %d\nfile: %s\nmessage: %s\n", auxiliaryFlag, filename, message);
     
     // Attempt to read the file
     file = fopen(filename, "r");
