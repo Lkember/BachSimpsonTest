@@ -46,20 +46,20 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
     else if (dst == 1 && auxiliaryFlag == 0) {
         unsigned int i = 0b01000000;              //this is 01000000
         unsigned char charval = i;
-        fwrite(&i, 1, 1, file);
+        fwrite(&charval, 1, 1, file);
     }
     else {
         unsigned int i = 0b00000000;               //this is 00000000
         unsigned char charval = i;
-        fwrite(&i, 1, 1, file);
+        fwrite(&charval, 1, 1, file);
     }
     
     // Write the time followed by 3 spare bytes
     fwrite(&time, 4, 1, file);
-    fwrite(&spareByte, 3, 1, file);
+    fwrite(&spareByte, 2, 1, file);
     
     // Write the ASCII text to a file
-    fprintf(file, "%s", message);
+    fwrite(message, 30, 1, file);
     
     // Write the checksum value
     // TODO NEED TO WRITE CHECKSUM VALUE
@@ -70,7 +70,7 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
 
 
 // Updates the file to include the latest message
-void updateFile(FILE *read, FILE *write, char *message, int auxiliaryFlag) {
+void updateFile(FILE *file, char *message, int auxiliaryFlag) {
     printf("File found. Updating file.\n");
     
     unsigned char buf[2];
@@ -78,21 +78,33 @@ void updateFile(FILE *read, FILE *write, char *message, int auxiliaryFlag) {
     short int spareByte = 0;
     
     //Read the first 2 bytes which are the number of records
-    fread(buf, 1, 2, read);
+    fread(buf, 1, 2, file);
     
     // Convert to an int and add 1
     numRecords = (buf[1]<<8)+buf[0];
     numRecords += 1;
     
+    rewind(file);
+    
     // Update numRecords and then write two blank bytes (as they are spare)
-    fwrite(&numRecords, 2, 1, write);
-    fwrite(&spareByte, 2, 1, write);
+    fwrite(&numRecords, 2, 1, file);
+    fwrite(&spareByte, 2, 1, file);
     
     // Skip to the position where we need to add the new record
-    fseek(write, numRecords*30, SEEK_CUR);
+    int position = 0;
+    position += 4;                  // Adding the sequence number + 2 spare bytes (4 bytes in total)
+    position += (numRecords-1)*40;  // Adding 40 bytes per record
+    
+    printf("Moving to position: %d\n", position);
+    
+    fseek(file, position, SEEK_SET);
     
     // Write the new record
-    writeRecord(write, message, numRecords, auxiliaryFlag);
+    writeRecord(file, message, numRecords, auxiliaryFlag);
+    
+    // Write the checksum
+    //TODO: NEED TO CALCULATE CHECKSUM
+    fwrite(&spareByte, 1, 1, file);
     
     printf("Successfully updated file\n");
 }
@@ -119,8 +131,7 @@ int main(int argc, char* argv[]) {
     int auxiliaryFlag = 0;
     char *filename;
     char *message;
-    FILE *read_fptr;
-    FILE *write_fptr;
+    FILE *file;
     
     // This is used for reading arguments
     static struct option long_options[] = {
@@ -160,21 +171,21 @@ int main(int argc, char* argv[]) {
     printf("auxiliary flag: %d\nfile: %s\nmessage: %s\n", auxiliaryFlag, filename, message);
     
     // Attempt to read the file
-    read_fptr = fopen(filename, "r");
+    file = fopen(filename, "r");
     
     // If the file is null it needs to be created
-    if (read_fptr == NULL) {
-        write_fptr = fopen(filename, "a+");
-        createFile(write_fptr, message, auxiliaryFlag);
+    if (file == NULL) {
+        file = fopen(filename, "a+");
+        createFile(file, message, auxiliaryFlag);
         
-        fclose(write_fptr);
+        fclose(file);
     }
     // Otherwise we only need to update the file
     else {
-        write_fptr = fopen(filename, "r+");
-        updateFile(read_fptr, write_fptr, message, auxiliaryFlag);
+        fclose(file);
+        file = fopen(filename, "r+");
+        updateFile(file, message, auxiliaryFlag);
         
-        fclose(read_fptr);
-        fclose(write_fptr);
+        fclose(file);
     }
 }
