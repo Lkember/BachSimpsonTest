@@ -5,13 +5,41 @@
 #include <time.h>
 #include <inttypes.h>
 
+// Calculates the check sum for the entire file
+uint8_t calculateChecksum(FILE *file) {
+    
+    // Getting the size of the file and ignoring the last byte (the checksum)
+    fseek(file, 0L, SEEK_END);
+    int fileSize = ftell(file);
+    fileSize -= 1;
+    
+    rewind(file);
+    
+    uint8_t checksum = 0;
+    uint8_t cur;
+    
+    int i;
+    for (i = 0; i<fileSize; i++) {
+        fread(&cur, 1, 1, file);
+        checksum += cur;
+    }
+    
+    printf("file size: %d\n", fileSize);
+    printf("checksum before = %" PRIu8 "\n", checksum);
+    checksum = ~checksum;
+    printf("checksum after = %" PRIu8 "\n", checksum);
+    
+    return checksum;
+}
+
+
 // Writes a new record to the given file at the current position
 void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFlag) {
     printf("Adding record...\n");
     
     int epochTimestamp = 946684800;     //The amount of seconds from 1970-2000
     int dst;
-    short int spareByte = 0;
+    uint16_t spareByte = 0;
     
     // Calculating the current time for the new record
     time_t rawtime;
@@ -52,16 +80,29 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
         fwrite(&i, 1, 1, file);
     }
     
-    // Write the time followed by 3 spare bytes
+    // Write the time followed by 2 spare bytes
     fwrite(&time, 4, 1, file);
     fwrite(&spareByte, 2, 1, file);
     
     // Write the ASCII text to a file
     fwrite(message, 30, 1, file);
     
+    // Calculating the checksum
+    uint8_t checksum = 0;
+    fseek(file, -39, SEEK_CUR);
+    
+    int i;
+    for (i = 0; i<39; i++) {
+        uint8_t cur;
+        
+        fread(&cur, 1, 1, file);
+        checksum += cur;
+    }
+    
+    checksum = ~checksum;
+    
     // Write the checksum value
-    // TODO NEED TO WRITE CHECKSUM VALUE
-    fwrite(&spareByte, 1, 1, file);
+    fwrite(&checksum, 1, 1, file);
     
     printf("Record added\n");
 }
@@ -98,9 +139,11 @@ void updateFile(FILE *file, char *message, int auxiliaryFlag) {
     // Write the new record
     writeRecord(file, message, numRecords, auxiliaryFlag);
     
-    // Write the checksum
-    //TODO: NEED TO CALCULATE CHECKSUM
-    fwrite(&spareByte, 1, 1, file);
+    // Write the checksum for the entire file
+    uint8_t checksum = calculateChecksum(file);
+    checksum = ~checksum;
+    
+    fwrite(&checksum, 1, 1, file);
     
     printf("Successfully updated file\n");
 }
@@ -118,7 +161,10 @@ void createFile(FILE *file, char *message, int auxiliaryFlag) {
     // Write the next record
     writeRecord(file, message, numRecords, auxiliaryFlag);
     
-    fwrite(&spareByte, 1, 1, file);
+    uint8_t checksum = calculateChecksum(file);
+    fseek(file, 0, SEEK_END);
+    
+    fwrite(&checksum, 1, 1, file);
 }
 
 

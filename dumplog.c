@@ -5,6 +5,30 @@
 #include <inttypes.h>
 
 
+uint8_t checksumCheck(FILE *file) {
+    rewind(file);
+    
+    uint8_t checksum = 0;
+    uint8_t cur;
+    int counter=0;
+    while(fread(&cur, 1, 1, file) == 1) {
+        
+        printf("%d checksum = %" PRIu8 "   cur = %d    Checksum = %" PRIu8 "\n", counter, checksum, cur, (unsigned char)(cur+checksum));
+        
+        checksum += cur;
+        counter += 1;
+    }
+    
+    printf("counter = %d\n", counter);
+    printf("checksum before = %" PRIu8 "\n", checksum);
+    
+    checksum = ~checksum;
+    
+    printf("checksum after = %" PRIu8 "\n", checksum);
+    
+    return checksum;
+}
+
 // reads and summarizes files
 void readRecord(FILE *file) {
     uint16_t recordNum;         // Used to hold the record number
@@ -68,7 +92,6 @@ void readRecord(FILE *file) {
     
     
     // Displaying the data
-    
     printf("------------------------\nRecord %d\n------------------------\n", recordNum);
     if (aux == 1) {
         
@@ -118,13 +141,8 @@ void readFile(FILE *file) {
     fseek(file, 2, SEEK_CUR);
     
     // Reads each record
-//    char recordsBuf[40];
-    
     int i;
     for (i = 0; i<numRecords; i++) {
-//        fread(recordsBuf, 1, 40, file);
-//        readRecord(recordsBuf);
-        
         readRecord(file);
     }
     
