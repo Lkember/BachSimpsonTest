@@ -53,7 +53,6 @@ void readRecord(FILE *file) {
     time_t time = (time_t)timestamp;
     timeStruct = *localtime(&time);
     
-    //    strftime(time, sizeof(time), "%Y-%m-%d %H:%M:%S %Z", &timeStruct);
     officialTime = asctime(&timeStruct);
     
     
@@ -68,7 +67,6 @@ void readRecord(FILE *file) {
     
     
     // Displaying the data
-    
     printf("------------------------\nRecord %d\n------------------------\n", recordNum);
     if (aux == 1) {
         
@@ -140,6 +138,8 @@ int main(int argc, char* argv[]) {
         printf("Usage: -f FILENAME.EXTENSION\n");
         exit(EXIT_FAILURE);
     }
+    
+    printf("%d\n", strcmp(argv[1], "-f"));
     
     if (strcmp(argv[1], "-f")) {
         printf("Usage: -f FILENAME.EXTENSION\n");
