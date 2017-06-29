@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
 #include <time.h>
 #include <inttypes.h>
 
@@ -175,35 +174,33 @@ int main(int argc, char* argv[]) {
     char *message;
     FILE *file;
     
-    // This is used for reading arguments
-    static struct option long_options[] = {
-        {"auxiliary", optional_argument, 0, 'a'},
-        {"file", required_argument, 0, 'f'},
-        {"textMessage", required_argument, 0, 't'},
-        {0,0,0,0}
-    };
     
-    int option_index = 0;
-    int c;
-    while ((c = getopt_long(argc, argv, "af:t:", long_options, &option_index)) != -1) {
+    // Checking arguments
+    
+    if (argc < 5) {
+        printf("Error\nUsage: -f FILENAME -t LOG MESSAGE\n");
+    }
+    
+    int i;
+    for (i = 1; i < argc; i++) {
         
-        switch (c) {
-            
-            case 'a':
-                auxiliaryFlag = 1;
-                break;
-                
-            case 'f':
-                filename = optarg;
-                break;
-                
-            case 't':
-                message = optarg;
-                break;
-                
+        if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "-F") == 0) {
+            filename = argv[i+1];
+            i += 1;
+        }
+        else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "-A") == 0) {
+            auxiliaryFlag = 1;
+        }
+        else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "-T") == 0) {
+            message = argv[i+1];
+            i += 1;
+        }
+        else {
+            printf("Unknown argument %s\n", argv[i]);
         }
     }
     
+
     if (filename == NULL || message == NULL) {
         printf("Error\nUsage: -f FILENAME -t LOG MESSAGE\n");
         exit(EXIT_FAILURE);
