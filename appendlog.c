@@ -202,13 +202,21 @@ int main(int argc, char* argv[]) {
             printf("Unknown argument %s\n", argv[i]);
         }
     }
-    
 
     if (filename == NULL || message == NULL) {
         printf("Error\nUsage: -f FILENAME -t LOG MESSAGE\n");
         exit(EXIT_FAILURE);
     }
     
+    
+    // Padding the message with spaces if it is not the correct length
+    int length = strlen(message);
+    
+    if (length < 30) {
+        char *spaces = "                              ";
+        strncat(message, spaces, 30-length);
+    }
+
     // Attempt to read the file
     file = fopen(filename, "r");
     
