@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <inttypes.h>
+#include <arpa/inet.h>
 
 // Calculates the check sum for the entire file
 // The isCreation int is to check if the file is being created now or
@@ -59,7 +60,8 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
         dst = 0;
     }
     
-    // Write the record number
+    // Convert to big endian and then write the record number
+    recordNum = htons(recordNum);
     fwrite(&recordNum, 2, 1, file);
     
     // Write the auxiliary and dst flags
@@ -80,7 +82,8 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
         fwrite(&i, 1, 1, file);
     }
     
-    // Write the time followed by 2 spare bytes
+    // Convert to Big Endian and then write the time followed by 2 spare bytes
+    time = htonl(time);
     fwrite(&time, 4, 1, file);
     fwrite(&spareByte, 2, 1, file);
     
@@ -126,6 +129,7 @@ void updateFile(FILE *file, char *message, int auxiliaryFlag) {
     rewind(file);
     
     // Update numRecords and then write two blank bytes (as they are spare)
+    numRecords = htons(numRecords);
     fwrite(&numRecords, 2, 1, file);
     fwrite(&spareByte, 2, 1, file);
     
@@ -154,7 +158,8 @@ void createFile(FILE *file, char *message, int auxiliaryFlag) {
     short int numRecords = 1;
     short int spareByte = 0;
     
-    // Write the number of records followed by 2 bytes
+    // Convert to Big-Endian and then write the number of records followed by 2 bytes
+    numRecords = htons(numRecords);
     fwrite(&numRecords, 1, 2, file);
     fwrite(&spareByte, 2, 1, file);
     

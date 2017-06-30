@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <inttypes.h>
+#include <arpa/inet.h>
 
 // Sums all the bytes in the file looking for 255 or 0xFF
 uint8_t fileChecksumCheck(FILE *file) {
@@ -49,9 +50,9 @@ void readRecord(FILE *file) {
     int dst;
     int epochTimestamp = 946684800;     //The amount of seconds from 1970-2000
     
-    // Reads the record number
+    // Reads the record number and converts to hosts endianness
     fread(&recordNum, sizeof(recordNum), 1, file);
-    
+    recordNum = ntohs(recordNum);
     
     // Reads the auxiliary flag and dst byte
     fread(&auxdstByte, sizeof(auxdstByte), 1, file);
@@ -76,9 +77,11 @@ void readRecord(FILE *file) {
     }
     
     
-    // Getting the timestamp
+    // Getting the timestamp and converting to hosts endianness
     uint32_t timestamp;
     fread(&timestamp, sizeof(timestamp), 1, file);
+    timestamp = ntohl(timestamp);
+    
     fseek(file, 2, SEEK_CUR);                       // the next 2 bytes are spare
     
     timestamp += epochTimestamp;
@@ -145,8 +148,9 @@ void readRecord(FILE *file) {
 void readFile(FILE *file) {
     uint16_t numRecords;
     
-    // Reads the first 2 bytes (the number of records)
+    // Reads the first 2 bytes (the number of records) and converts to hosts endianness
     fread(&numRecords, sizeof(numRecords), 1, file);
+    numRecords = ntohs(numRecords);
     
     // Skips the next 2 bytes (as they are spare bytes)
     fseek(file, 2, SEEK_CUR);
