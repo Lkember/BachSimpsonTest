@@ -5,12 +5,17 @@
 #include <inttypes.h>
 
 // Calculates the check sum for the entire file
-uint8_t calculateChecksum(FILE *file) {
+// The isCreation int is to check if the file is being created now or
+// if the file already existed and was just being added to
+uint8_t calculateChecksum(FILE *file, int isCreation) {
     
     // Getting the size of the file and ignoring the last byte (the checksum)
     fseek(file, 0L, SEEK_END);
     int fileSize = ftell(file);
-    fileSize -= 1;
+    
+    if (isCreation == 0) {
+        fileSize -= 1;
+    }
     
     rewind(file);
     
@@ -23,10 +28,7 @@ uint8_t calculateChecksum(FILE *file) {
         checksum += cur;
     }
     
-    printf("file size: %d\n", fileSize);
-    printf("checksum before = %" PRIu8 "\n", checksum);
     checksum = ~checksum;
-    printf("checksum after = %" PRIu8 "\n", checksum);
     
     return checksum;
 }
@@ -59,7 +61,6 @@ void writeRecord(FILE *file, char *message, short int recordNum, int auxiliaryFl
     
     // Write the record number
     fwrite(&recordNum, 2, 1, file);
-    
     
     // Write the auxiliary and dst flags
     if (dst == 1 && auxiliaryFlag == 1) {
@@ -139,7 +140,7 @@ void updateFile(FILE *file, char *message, int auxiliaryFlag) {
     writeRecord(file, message, numRecords, auxiliaryFlag);
     
     // Write the checksum for the entire file
-    uint8_t checksum = calculateChecksum(file);
+    uint8_t checksum = calculateChecksum(file, 0);
     checksum = ~checksum;
     
     fwrite(&checksum, 1, 1, file);
@@ -160,9 +161,11 @@ void createFile(FILE *file, char *message, int auxiliaryFlag) {
     // Write the next record
     writeRecord(file, message, numRecords, auxiliaryFlag);
     
-    uint8_t checksum = calculateChecksum(file);
+    // Calculate the entire file's checksum
+    uint8_t checksum = calculateChecksum(file, 1);
     fseek(file, 0, SEEK_END);
     
+    // Write the checksum
     fwrite(&checksum, 1, 1, file);
 }
 
@@ -224,4 +227,6 @@ int main(int argc, char* argv[]) {
         
         fclose(file);
     }
+    
+    file = fopen(filename, "r");
 }

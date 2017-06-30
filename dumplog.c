@@ -4,27 +4,39 @@
 #include <time.h>
 #include <inttypes.h>
 
-
-uint8_t checksumCheck(FILE *file) {
+// Sums all the bytes in the file looking for 255 or 0xFF
+uint8_t fileChecksumCheck(FILE *file) {
+    
+    // Getting the size of the file and ignoring the last byte (the checksum)
+    fseek(file, 0L, SEEK_END);
+    int fileSize = ftell(file);
+    
     rewind(file);
     
     uint8_t checksum = 0;
     uint8_t cur;
-    int counter=0;
-    while(fread(&cur, 1, 1, file) == 1) {
-        
-        printf("%d checksum = %" PRIu8 "   cur = %d    Checksum = %" PRIu8 "\n", counter, checksum, cur, (unsigned char)(cur+checksum));
-        
+    
+    int i;
+    for (i = 0; i < fileSize; i++) {
+        fread(&cur, 1, 1, file);
         checksum += cur;
-        counter += 1;
     }
     
-    printf("counter = %d\n", counter);
-    printf("checksum before = %" PRIu8 "\n", checksum);
+    return checksum;
+}
+
+
+// Sums all the bytes in a record, looking for 255 or 0xFF
+// The file should be at the start position of the record
+uint8_t recordChecksumCheck(FILE *file) {
+    uint8_t checksum = 0;
+    uint8_t cur;
     
-    checksum = ~checksum;
-    
-    printf("checksum after = %" PRIu8 "\n", checksum);
+    int i;
+    for (i = 0; i < 40; i++) {
+        fread(&cur, 1, 1, file);
+        checksum += cur;
+    }
     
     return checksum;
 }
@@ -86,12 +98,18 @@ void readRecord(FILE *file) {
     
     
     //Getting the checksum
-    uint8_t checksum;
-    fread(&checksum, 1, 1, file);
     
+    fseek(file, -39, SEEK_CUR);
+    uint8_t checksum = recordChecksumCheck(file);
     
     // Displaying the data
-    printf("------------------------\nRecord %d\n------------------------\n", recordNum);
+    if (checksum == 255) {
+        printf("------------------------\nRecord %d\nValid Checksum: True\n------------------------\n", recordNum);
+    }
+    else {
+        printf("------------------------\nRecord %d\nValid Checksum: False\n------------------------\n", recordNum);
+        printf("Checksum = %"PRIu8"\n", checksum);
+    }
     if (aux == 1) {
         
         if (aux == 1) {
@@ -108,10 +126,7 @@ void readRecord(FILE *file) {
         else {
             printf("Daylight Savings Time = false\n");
         }
-        printf("Message:\n  %s\n", message);
-        
-        // TODO: NEED TO CHECK THE CHECKSUM
-        printf("Checksum: %" PRIu8 "\n\n", checksum);
+        printf("Message:\n\t%s\n\n", message);
     }
     else {
         printf("%s", officialTime);
@@ -121,19 +136,16 @@ void readRecord(FILE *file) {
         else {
             printf("Daylight Savings Time = false\n");
         }
-        printf("Message:\n  %s\n\n", message);
+        printf("Message:\n\t%s\n\n", message);
     }
 }
 
 
 // Reads the file and summarizes it's parts
 void readFile(FILE *file) {
-//    char numRecordsBuf[2];
     uint16_t numRecords;
     
     // Reads the first 2 bytes (the number of records)
-//    fread(&numRecords, sizeof(numRecords), 1, file);
-//    numRecords = numRecordsBuf[0] | numRecordsBuf[1] << 8;
     fread(&numRecords, sizeof(numRecords), 1, file);
     
     // Skips the next 2 bytes (as they are spare bytes)
@@ -144,10 +156,6 @@ void readFile(FILE *file) {
     for (i = 0; i<numRecords; i++) {
         readRecord(file);
     }
-    
-    
-    // TODO: NEED TO CHECK THAT THE FILE IS VALID
-    
 }
 
 int main(int argc, char* argv[]) {
@@ -157,8 +165,6 @@ int main(int argc, char* argv[]) {
         printf("Usage: -f FILENAME.EXTENSION\n");
         exit(EXIT_FAILURE);
     }
-    
-    printf("%d\n", strcmp(argv[1], "-f"));
     
     if (strcmp(argv[1], "-f")) {
         printf("Usage: -f FILENAME.EXTENSION\n");
@@ -175,6 +181,16 @@ int main(int argc, char* argv[]) {
     if (file == NULL) {
         printf("Could not find file: %s\n", filename);
         exit(EXIT_FAILURE);
+    }
+    
+    uint8_t checksum = fileChecksumCheck(file);
+    rewind(file);
+    
+    if (checksum == 255) {
+        printf("------------------------------------------------\n\tFilename: %s\n\tValid Checksum = True\n------------------------------------------------\n\n", filename);
+    }
+    else {
+        printf("------------------------------------------------\n\tFilename: %s\n\tValid Checksum = False\n------------------------------------------------\n\n", filename);
     }
     
     readFile(file);
